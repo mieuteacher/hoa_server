@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("PRM_DB_URL")
+}
+
+model users {
+  id            Int      @id @unique @default(autoincrement())
+  email         String   @unique @db.Char(100)
+  email_confirm Boolean  @default(false)
+  user_name     String   @unique @db.Char(30)
+  first_name    String   @db.Char(30)
+  last_name     String   @db.Char(30)
+  password      String   @db.Char(255)
+  blocked       Boolean  @default(false)
+  avatar        String   @default("https://firebasestorage.googleapis.com/v0/b/learnfirebase-2c8f7.appspot.com/o/meostores%2Fusers%2Fno_avatar.jpg?alt=media&token=7d5afb5a-48a4-4575-92cb-7759073ad611")
+  role          Role     @default(USER)
+  create_at     DateTime @default(now())
+  update_at     DateTime @default(now())
+  carts         carts?
+}
+
+model categories {
+  id       Int        @id @default(autoincrement())
+  title    String     @unique
+  status   Boolean    @default(false)
+  avatar   String     @default("category.png")
+  deleted  Boolean    @default(false)
+  products products[]
+}
+
+model products {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique(map: "Products_name_key")
+  active           Boolean            @default(false)
+  des              String
+  category_id      Int
+  price            Float
+  avatar           String             @default("https://firebasestorage.googleapis.com/v0/b/learnfirebase-2c8f7.appspot.com/o/db2ba0b3b0b32408778105d6be53a557_t.png?alt=media&token=fc4f08ac-a4fb-4998-874b-f997e29ee08e")
+  cart_details     cart_details[]
+  product_pictures product_pictures[]
+  category         categories         @relation(fields: [category_id], references: [id])
+  receipt_details  receipt_details[]
+  @@index([category_id], map: "products_category_id_fkey")
+}
+
+model product_pictures {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  url        String
+  product    products @relation(fields: [product_id], references: [id])
+
+  @@index([product_id], map: "product_pictures_product_id_fkey")
+}
+
+model carts {
+  id           String         @id @default(uuid())
+  user_id      Int            @unique
+  cart_details cart_details[]
+  user         users          @relation(fields: [user_id], references: [id])
+}
+
+model cart_details {
+  id         Int      @id @default(autoincrement())
+  cart_id    String
+  product_id Int
+  quantity   Int
+  note       String
+  cart       carts    @relation(fields: [cart_id], references: [id])
+  product    products @relation(fields: [product_id], references: [id])
+
+  @@index([cart_id], map: "cart_details_cart_id_fkey")
+  @@index([product_id], map: "cart_details_product_id_fkey")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+enum PayMode {
+    CASH
+    ZALO
+    MOMO
+}
+
+model receipts {
+    id              Int               @id @default(autoincrement())
+    receipt_code    String
+    total           Float
+    paid            Boolean
+    pay_mode        PayMode
+    paid_time       DateTime?
+    create_at       DateTime @default(now())
+    update_at       DateTime @default(now())
+    receipt_details receipt_details[]
+}
+
+model receipt_details {
+    id         Int      @id @default(autoincrement())
+    receipt    receipts @relation(fields: [receipt_id], references: [id])
+    receipt_id Int
+    product    products @relation(fields: [product_id], references: [id])
+    product_id Int
+    quantity   Int
+    note       String?
+}
